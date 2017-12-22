@@ -513,7 +513,7 @@ namespace BASE_URL do
 
   get "/collections" do
     response['access-control-allow-origin'] = '*'
-    {"Data":[],"Object":"list"}.to_json
+    {"Data" => [],"Object" => "list"}.to_json
   end
 
   get "/ciphers" do

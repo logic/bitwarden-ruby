@@ -774,6 +774,6 @@ end
 namespace ICONS_URL do
   get "/:domain/icon.png" do
     # TODO: do this service ourselves
-    redirect "http://#{params[:domain]}/favicon.ico"
+    redirect "https://icons.better-idea.org/icon?url=#{params[:domain]}&size=16..32..200&fallback_icon_url=https://raw.githubusercontent.com/bitwarden/web/master/src/images/fa-globe.png"
   end
 end

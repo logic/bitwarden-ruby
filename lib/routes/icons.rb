@@ -14,19 +14,18 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-require File.dirname(__FILE__) + "/lib/bitwarden_ruby.rb"
-require "#{APP_ROOT}/lib/app.rb"
+module BitwardenRuby
+  module Routing
+    module Icons
+      def self.registered(app)
+        app.namespace ICONS_URL do
+          get "/:domain/icon.png" do
+            # TODO: do this service ourselves
 
-# Parameters to pass to Net::SMTP.start, for sending password hint emails.
-# if :tls is true, we'll attempt to set up a TLS connection to the server; if
-# :starttls is true, we'll try to use STARTTLS after the connection is
-# established.
-#
-# set smtp: {
-#   address: "localhost",
-#   port: 25
-# }
-#
-# set :smtp_from, "nobody@localhost"
-
-run BitwardenRuby::App
+            redirect "https://besticon-demo.herokuapp.com/icon?url=#{params[:domain]}&size=16..32..200&fallback_icon_url=https://raw.githubusercontent.com/bitwarden/web/master/src/images/fa-globe.png"
+          end
+        end
+      end
+    end
+  end
+end

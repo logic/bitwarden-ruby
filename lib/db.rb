@@ -14,10 +14,19 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+#
+# To make a db change:
+#  - modify the schema in #connect for a new install
+#  - bump DB_VERSION
+#  - add a case in #migrate_from to migrate up to that new version
+#
+
 require "sqlite3"
 
 class Db
   class << self
+    DB_VERSION = 4
+
     attr_reader :db, :db_file
 
     def connect(db_file)
@@ -72,7 +81,14 @@ class Db
         type INTEGER,
         data BLOB,
         favorite BOOLEAN,
-        attachments BLOB)
+        attachments BLOB,
+        name BLOB,
+        notes BLOB,
+        fields BLOB,
+        login BLOB,
+        card BLOB,
+        identity BLOB,
+        securenote BLOB)
       ")
 
       @db.execute("
@@ -93,50 +109,21 @@ class Db
         (version INTEGER)
       ")
 
-      loop do
+      last_version = 0
+      while true
         v = @db.execute("SELECT version FROM schema_version").first
-        if !v
+        if v
+          if v["version"] == last_version
+            raise "looping in migrations, #{last_version} didn't increment"
+          elsif v["version"] == DB_VERSION
+            break
+          end
+        else
           v = { "version" => 0 }
         end
 
-        case v["version"]
-        when 0
-          @db.execute("INSERT INTO schema_version (version) VALUES (1)")
-
-        when 1
-          @db.execute("
-            CREATE TABLE IF NOT EXISTS
-            folders
-            (uuid STRING PRIMARY KEY,
-            created_at DATETIME,
-            updated_at DATETIME,
-            user_uuid STRING,
-            name BLOB)
-          ")
-
-          @db.execute("UPDATE schema_version SET version = 2")
-
-        when 2
-          @db.execute("
-            CREATE TABLE IF NOT EXISTS
-            equiv_domains
-            (uuid STRING PRIMARY KEY,
-            user_uuid STRING)
-          ")
-
-          @db.execute("
-            CREATE TABLE IF NOT EXISTS
-            equiv_domain_names
-            (uuid STRING PRIMARY KEY,
-            domain STRING,
-            domain_uuid STRING)
-          ")
-
-          @db.execute("UPDATE schema_version SET version = 3")
-
-        when 3
-          break
-        end
+        last_version = v["version"]
+        migrate_from(v["version"])
       end
 
       # eagerly cache column definitions
@@ -158,6 +145,67 @@ class Db
       # STDERR.puts(([ query ] + params).inspect)
 
       self.connection.execute(query, params)
+    end
+
+    def migrate_from(version)
+      STDERR.puts "migrating db from version #{version}"
+
+      case version
+      when 0
+        # we created a new db from scratch, no need to migrate to anything
+        @db.execute("INSERT INTO schema_version (version) " <<
+          "VALUES ('#{DB_VERSION}')")
+        return
+
+      when 1
+        @db.execute("
+          CREATE TABLE IF NOT EXISTS
+          folders
+          (uuid STRING PRIMARY KEY,
+          created_at DATETIME,
+          updated_at DATETIME,
+          user_uuid STRING,
+          name BLOB)
+        ")
+
+      when 2
+        @db.execute("
+          CREATE TABLE IF NOT EXISTS
+          equiv_domains
+          (uuid STRING PRIMARY KEY,
+          user_uuid STRING)
+        ")
+
+        @db.execute("
+          CREATE TABLE IF NOT EXISTS
+          equiv_domain_names
+          (uuid STRING PRIMARY KEY,
+          domain STRING,
+          domain_uuid STRING)
+        ")
+
+        @db.execute("UPDATE schema_version SET version = 3")
+
+      when 3
+        @db.execute("ALTER TABLE ciphers ADD name BLOB")
+        @db.execute("ALTER TABLE ciphers ADD notes BLOB")
+        @db.execute("ALTER TABLE ciphers ADD fields BLOB")
+        @db.execute("ALTER TABLE ciphers ADD login BLOB")
+        @db.execute("ALTER TABLE ciphers ADD card BLOB")
+        @db.execute("ALTER TABLE ciphers ADD identity BLOB")
+        @db.execute("ALTER TABLE ciphers ADD securenote BLOB")
+
+        # migrate each existing field in the data column to its new dedicated
+        # field
+        Cipher.clear_column_cache!
+        Cipher.all.each do |c|
+          c.migrate_data!
+        end
+
+        STDERR.puts "migrated all ciphers to new dedicated fields"
+      end
+
+      @db.execute("UPDATE schema_version SET version = #{version + 1}")
     end
   end
 end

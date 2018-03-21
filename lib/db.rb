@@ -169,24 +169,6 @@ class Db
         ")
 
       when 2
-        @db.execute("
-          CREATE TABLE IF NOT EXISTS
-          equiv_domains
-          (uuid STRING PRIMARY KEY,
-          user_uuid STRING)
-        ")
-
-        @db.execute("
-          CREATE TABLE IF NOT EXISTS
-          equiv_domain_names
-          (uuid STRING PRIMARY KEY,
-          domain STRING,
-          domain_uuid STRING)
-        ")
-
-        @db.execute("UPDATE schema_version SET version = 3")
-
-      when 3
         @db.execute("ALTER TABLE ciphers ADD name BLOB")
         @db.execute("ALTER TABLE ciphers ADD notes BLOB")
         @db.execute("ALTER TABLE ciphers ADD fields BLOB")
@@ -203,6 +185,24 @@ class Db
         end
 
         STDERR.puts "migrated all ciphers to new dedicated fields"
+
+      when 3
+        @db.execute("
+          CREATE TABLE IF NOT EXISTS
+          equiv_domains
+          (uuid STRING PRIMARY KEY,
+          user_uuid STRING)
+        ")
+
+        @db.execute("
+          CREATE TABLE IF NOT EXISTS
+          equiv_domain_names
+          (uuid STRING PRIMARY KEY,
+          domain STRING,
+          domain_uuid STRING)
+        ")
+
+        @db.execute("UPDATE schema_version SET version = 3")
       end
 
       @db.execute("UPDATE schema_version SET version = #{version + 1}")

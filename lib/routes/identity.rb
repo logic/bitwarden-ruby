@@ -41,9 +41,6 @@ module BitwardenRuby
               need_params(
                 :client_id,
                 :grant_type,
-                :deviceidentifier,
-                :devicename,
-                :devicetype,
                 :password,
                 :scope,
                 :username,

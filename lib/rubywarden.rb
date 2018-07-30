@@ -34,7 +34,6 @@ require "#{APP_ROOT}/lib/db.rb"
 require "#{APP_ROOT}/lib/dbmodel.rb"
 require "#{APP_ROOT}/lib/user.rb"
 require "#{APP_ROOT}/lib/device.rb"
-require "#{APP_ROOT}/lib/domain.rb"
 require "#{APP_ROOT}/lib/cipher.rb"
 require "#{APP_ROOT}/lib/folder.rb"
 

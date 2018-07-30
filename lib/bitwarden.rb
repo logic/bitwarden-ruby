@@ -19,7 +19,7 @@ require "pbkdf2"
 require "openssl"
 
 class Bitwarden
-  class InvalidCipherString < RuntimeError; end
+  class InvalidCipherString < StandardError; end
 
   # convenience methods for hashing/encryption/decryption that the apps do,
   # just so we can test against
@@ -60,7 +60,7 @@ class Bitwarden
 
     # encrypt+mac a value with a key and mac key and random iv, return a
     # CipherString of it
-    def encrypt(pt, key, macKey)
+    def encrypt(pt, key, macKey = nil)
       iv = OpenSSL::Random.random_bytes(16)
 
       cipher = OpenSSL::Cipher.new "AES-256-CBC"
@@ -70,14 +70,18 @@ class Bitwarden
       ct = cipher.update(pt)
       ct << cipher.final
 
-      mac = OpenSSL::HMAC.digest(OpenSSL::Digest.new("SHA256"), macKey,
-        iv + ct)
+      mac = nil
+      if macKey
+        mac = OpenSSL::HMAC.digest(OpenSSL::Digest.new("SHA256"), macKey,
+          iv + ct)
+      end
 
       CipherString.new(
-        CipherString::TYPE_AESCBC256_HMACSHA256_B64,
+        mac ? CipherString::TYPE_AESCBC256_HMACSHA256_B64 :
+          CipherString::TYPE_AESCBC256_B64,
         Base64.strict_encode64(iv),
         Base64.strict_encode64(ct),
-        Base64.strict_encode64(mac),
+        mac ? Base64.strict_encode64(mac) : nil,
       )
     end
 
@@ -110,7 +114,7 @@ class Bitwarden
         cmac = OpenSSL::HMAC.digest(OpenSSL::Digest.new("SHA256"),
           macKey, iv + ct)
         if !self.macsEqual(macKey, mac, cmac)
-          raise "invalid mac"
+          raise "invalid mac #{mac.inspect} != #{cmac.inspect}"
         end
 
         cipher = OpenSSL::Cipher.new "AES-256-CBC"
@@ -140,7 +144,8 @@ class Bitwarden
 
     def self.parse(str)
       if !(m = str.to_s.match(/\A(\d)\.([^|]+)\|(.+)\z/))
-        raise InvalidCipherString "invalid CipherString: #{str.inspect}"
+        raise Bitwarden::InvalidCipherString, "invalid CipherString: " <<
+          str.inspect
       end
 
       type = m[1].to_i
@@ -165,7 +170,7 @@ class Bitwarden
 
   class Token
     class << self
-      KEY = "#{APP_ROOT}/db/jwt-rsa.key"
+      KEY = "#{APP_ROOT}/db/#{RACK_ENV}/jwt-rsa.key"
 
       attr_reader :rsa
 
@@ -176,6 +181,9 @@ class Bitwarden
         else
           @rsa = OpenSSL::PKey::RSA.generate 2048
 
+          if !Dir.exists?(File.dirname(KEY))
+            Dir.mkdir(File.dirname(KEY))
+          end
           f = File.new(KEY, File::CREAT|File::TRUNC|File::RDWR, 0600)
           f.write @rsa.to_pem
           f.write @rsa.public_key.to_pem

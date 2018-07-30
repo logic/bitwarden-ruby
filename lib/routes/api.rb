@@ -16,7 +16,7 @@
 
 require 'net/smtp'
 
-module BitwardenRuby
+module Rubywarden
   module Routing
     module Api
       def self.registered(app)

@@ -14,22 +14,28 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+require 'sinatra/activerecord'
+require 'sinatra/namespace'
+
 require_relative 'helpers/request_helpers'
 
 require_relative 'routes/api'
 require_relative 'routes/icons'
 require_relative 'routes/identity'
 
-module BitwardenRuby
+module Rubywarden
   class App < Sinatra::Base
     register Sinatra::Namespace
+    register Sinatra::ActiveRecordExtension
 
     set :root, File.dirname(__FILE__)
+    set :database_file, "../db/config.yml"
+
     configure do
       enable :logging
     end
 
-    helpers BitwardenRuby::RequestHelpers
+    helpers Rubywarden::RequestHelpers
 
     before do
       if request.content_type.to_s.match(/\Aapplication\/json(;|\z)/)
@@ -55,8 +61,8 @@ module BitwardenRuby
       content_type :json
     end
 
-    register BitwardenRuby::Routing::Api
-    register BitwardenRuby::Routing::Icons
-    register BitwardenRuby::Routing::Identity
+    register Rubywarden::Routing::Api
+    register Rubywarden::Routing::Icons
+    register Rubywarden::Routing::Identity
   end
 end

@@ -11,10 +11,15 @@ end
 # most tests require this to be on
 ALLOW_SIGNUPS = true
 
-require File.realpath(File.dirname(__FILE__) + "/../lib/bitwarden_ruby.rb")
+require File.realpath(File.dirname(__FILE__) + "/../lib/rubywarden.rb")
 require "#{APP_ROOT}/lib/app.rb"
 
+#load 'db/schema.rb'
+ActiveRecord::Migrator.up "db/migrate"
+
 include Rack::Test::Methods
+
+#ActiveRecord::Migration.maintain_test_schema!
 
 def last_json_response
   JSON.parse(last_response.body)
@@ -42,5 +47,5 @@ def json_request(verb, path, params = {}, headers = {})
 end
 
 def app
-  BitwardenRuby::App
+  Rubywarden::App
 end

@@ -14,7 +14,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-require File.dirname(__FILE__) + "/lib/bitwarden_ruby.rb"
+require File.dirname(__FILE__) + "/lib/rubywarden.rb"
 require "#{APP_ROOT}/lib/app.rb"
 
 # Parameters to pass to Net::SMTP.start, for sending password hint emails.
@@ -29,4 +29,4 @@ require "#{APP_ROOT}/lib/app.rb"
 #
 # set :smtp_from, "nobody@localhost"
 
-run BitwardenRuby::App
+run Rubywarden::App

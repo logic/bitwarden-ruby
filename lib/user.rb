@@ -17,20 +17,15 @@
 require "rotp"
 
 class User < DBModel
-  set_table_name "users"
-  set_primary_key "uuid"
+  self.table_name = "users"
+  #set_primary_key "uuid"
 
-  def before_save
-    if self.security_stamp.blank?
-      self.security_stamp = SecureRandom.uuid
-    end
-    true
-  end
+  before_create :generate_uuid_primary_key
+  before_validation :generate_security_stamp
 
-  def ciphers
-    @ciphers ||= Cipher.find_all_by_user_uuid(self.uuid).
-      each{|d| d.user = self }
-  end
+  has_many :ciphers, foreign_key: :user_uuid, inverse_of: :user
+  has_many :folders, foreign_key: :user_uuid, inverse_of: :user
+  has_many :devices, foreign_key: :user_uuid, inverse_of: :user
 
   def decrypt_data_with_master_password_key(data, mk)
     # self.key is random data encrypted with the key of (password,email), so
@@ -38,11 +33,6 @@ class User < DBModel
     # encryption key, then use that key to decrypt the data
     encKey = Bitwarden.decrypt(self.key, mk[0, 32], mk[32, 32])
     Bitwarden.decrypt(data, encKey[0, 32], encKey[32, 32])
-  end
-
-  def devices
-    @devices ||= Device.find_all_by_user_uuid(self.uuid).
-      each{|d| d.user = self }
   end
 
   def encrypt_data_with_master_password_key(data, mk)
@@ -53,22 +43,9 @@ class User < DBModel
     Bitwarden.encrypt(data, encKey[0, 32], encKey[32, 32])
   end
 
-  def folders
-    @folders ||= Folder.find_all_by_user_uuid(self.uuid).
-      each{|f| f.user = self }
-  end
-
-  def domains
-    @domains ||= EquivalentDomain.find_all_by_user_uuid(self.uuid).
-      each{|f| f.user = self }
-  end
-
   def has_password_hash?(hash)
     self.password_hash.timingsafe_equal_to(hash)
   end
-
-  # TODO: password_hash=() should update security_stamp when it changes, I
-  # think
 
   def to_hash
     {
@@ -92,7 +69,27 @@ class User < DBModel
     self.totp_secret.present?
   end
 
+  def update_master_password(old_pwd, new_pwd)
+    # original random encryption key must be preserved, just re-encrypted with
+    # a new key derived from the new password
+
+    orig_key = Bitwarden.decrypt(self.key,
+      Bitwarden.makeKey(old_pwd, self.email), nil)
+
+    self.key = Bitwarden.encrypt(orig_key,
+      Bitwarden.makeKey(new_pwd, self.email)).to_s
+
+    self.password_hash = Bitwarden.hashPassword(new_pwd, self.email)
+    self.security_stamp = SecureRandom.uuid
+  end
+
   def verifies_totp_code?(code)
     ROTP::TOTP.new(self.totp_secret).now == code.to_s
+  end
+protected
+  def generate_security_stamp
+    if self.security_stamp.blank?
+      self.security_stamp = SecureRandom.uuid
+    end
   end
 end

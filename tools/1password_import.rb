@@ -74,7 +74,7 @@ if !@u.has_password_hash?(Bitwarden.hashPassword(password, username))
   raise "master password does not match stored hash"
 end
 
-@master_key = Bitwarden.makeKey(password, @u.email)
+@master_key = Bitwarden.makeKey(password, @u.email, @u.kdf_iterations)
 
 def encrypt(str)
   @u.encrypt_data_with_master_password_key(str, @master_key)
@@ -129,7 +129,7 @@ File.read(file).split("\n").each do |line|
   c = Cipher.new
   c.user_uuid = @u.uuid
   c.type = Cipher::TYPE_LOGIN
-  c.favorite = (i["openContents"] && i["openContents"]["faveIndex"])
+  c.favorite = !!(i["openContents"] && i["openContents"]["faveIndex"])
 
   cdata = {
     "Name" => encrypt(i["title"].blank? ? "--" : i["title"]),

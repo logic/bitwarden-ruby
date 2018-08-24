@@ -46,6 +46,20 @@ module Rubywarden
       }.to_json ]
     end
 
+    def delete_cipher app:, uuid:
+      d = device_from_bearer
+      if !d
+        halt validation_error("invalid bearer")
+      end
+
+      c = nil
+      if uuid.blank? || !(c = Cipher.find_by_user_uuid_and_uuid(d.user_uuid, uuid))
+        halt validation_error("invalid cipher")
+      end
+      c.destroy
+      ""
+    end # delete_cipher
+
     def update_cipher()
       response['access-control-allow-origin'] = '*'
       d = device_from_bearer

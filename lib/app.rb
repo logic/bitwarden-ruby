@@ -47,7 +47,9 @@ module Rubywarden
           params.merge!(JSON.parse(js))
         end
       ## needed for the web vault, which doesn't use the content-type
-      elsif request.accept.to_s.match(/application\/json/) && !request.content_type.to_s.match(/application\/x-www-form-urlencoded/)
+      elsif request.accept.to_s.match(/application\/json/) && \
+            !request.content_type.to_s.match(/application\/x-www-form-urlencoded/) && \
+            !request.content_type.to_s.match(/multipart\/form-data/)
         js = request.body.read.to_s
         if !js.strip.blank?
           params.merge!(JSON.parse(js))

@@ -33,7 +33,13 @@ documentation available other than the
 [.NET Bitwarden code](https://github.com/bitwarden/core)
 itself.
 
-### Usage
+### Deployment
+
+Automated deployment of Rubywarden is possible with 3rd party support:
+
+- [Ansible playbook](https://github.com/qbit/openbsd-rubywarden) for OpenBSD
+
+### Manual Setup
 
 Run `bundle install` at least once.
 
@@ -46,21 +52,16 @@ In order to create the initial database and the required tables run:
 
 	mkdir db/production
 	sudo chown _rubywarden db/production
-	sudo -u _rubywarden env RACK_ENV=production bundle exec rake db:migrate
-
-If you've previously used Rubywarden before July 30, 2018 when it was called
-`bitwarden-ruby`, when it did not use ActiveRecord, you should instead
-[migrate](AR-MIGRATE.md)
-your existing database.
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec rake db:migrate
 
 To run via Rack on port 4567, as user `_rubywarden`:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec rackup -p 4567 config.ru
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec rackup -p 4567 config.ru
 
 You'll probably want to run it once with signups enabled, to allow yourself
 to create an account:
 
-	sudo -u _rubywarden env RACK_ENV=production ALLOW_SIGNUPS=1 bundle exec rackup -p 4567 config.ru
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production ALLOW_SIGNUPS=1 bundle exec rackup -p 4567 config.ru
 
 Once the server is running, the Bitwarden apps (such as the Firefox extension)
 can be configured to use your own Bitwarden server before login.
@@ -70,13 +71,32 @@ To run the test suite:
 
 	bundle exec rake test
 
+### Updating
+
+If you've previously used Rubywarden before July 30, 2018 when it was called
+`bitwarden-ruby`, when it did not use ActiveRecord, you should instead
+[migrate](AR-MIGRATE.md)
+your existing database.
+
+To update your instance of Rubywarden, fetch the latest code:
+
+	cd /path/to/your/rubywarden
+	git pull --ff-only
+
+Run any database migrations:
+
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec rake db:migrate
+
+Restart your Rubywarden instance (via Rack, Unicorn, or however you have
+deployed it).
+
 ### Changing Master Password
 
 Changing a user's master password must be done from the command line (as it
 requires interacting with the plaintext password, which the web API will never
 do).
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/change_master_password.rb -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/change_master_password.rb -u you@example.com
 
 ### 2-Factor Authentication
 
@@ -86,7 +106,7 @@ To activate Time-based One-Time Passwords (TOTP) on your account after you've
 signed up in the previous steps, run the `tools/activate_totp.rb` program on
 the server:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/activate_totp.rb -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/activate_totp.rb -u you@example.com
 
 You'll be shown a `data:` URL that has a PNG-encoded QR code, which you must
 copy and paste into a browser, then scan with your mobile TOTP authenticator
@@ -111,7 +131,7 @@ be careful with it).
 Once you have created your initial user account through Rubywarden, run the
 conversion tool with your account e-mail address:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/1password_import.rb -f /path/to/data.1pif -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/1password_import.rb -f /path/to/data.1pif -u you@example.com
 
 It will prompt you for the master password you already created, and then
 convert and import as many items as it can.
@@ -130,7 +150,7 @@ simply exported as text.
 Once you have created your initial user account through Rubywarden, run the
 conversion tool with your account e-mail address:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/bitwarden_import.rb -f /path/to/data.csv -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/bitwarden_import.rb -f /path/to/data.csv -u you@example.com
 
 It will prompt you for the master password you already created, and then
 convert and import as many items as it can.
@@ -148,11 +168,11 @@ There is no need to export your Keepass-database - you can use it as is.
 Once you have created your initial user account through Rubywarden, run the
 conversion tool with your account e-mail address:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/keepass_import.rb -f /path/to/data.kdbx -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/keepass_import.rb -f /path/to/data.kdbx -u you@example.com
 
 If your Keepass-database is secured using a keyfile, you can pass it using the `-k` parameter:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/keepass_import.rb -f /path/to/data.kdbx -k /path/to/keyfile.key -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/keepass_import.rb -f /path/to/data.kdbx -k /path/to/keyfile.key -u you@example.com
 
 It will prompt you for the master password you already created, and then
 convert and import as many items as it can.
@@ -172,7 +192,7 @@ Unfortunately due to limitations in LastPass export the "extra fields" and
 Once you have created your initial user account through Rubywarden, run the
 conversion tool with your account e-mail address:
 
-	sudo -u _rubywarden env RACK_ENV=production bundle exec ruby tools/lastpass_import.rb -f /path/to/data.csv -u you@example.com
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production bundle exec ruby tools/lastpass_import.rb -f /path/to/data.csv -u you@example.com
 
 It will prompt you for the master password you already created, and then
 convert and import as many items as it can.

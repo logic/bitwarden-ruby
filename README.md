@@ -1,6 +1,8 @@
-*(This project is not associated with the
+**This project is not associated with the
 [Bitwarden](https://bitwarden.com/)
-project nor 8bit Solutions LLC.)*
+project nor 8bit Solutions LLC.
+Do not contact Bitwarden for support with using this backend server
+(or at the very least, make it abundantly clear that you are using a 3rd party backend server).**
 
 ## Rubywarden
 
@@ -61,7 +63,7 @@ To run via Rack on port 4567, as user `_rubywarden`:
 You'll probably want to run it once with signups enabled, to allow yourself
 to create an account:
 
-	sudo -u _rubywarden env RUBYWARDEN_ENV=production ALLOW_SIGNUPS=1 bundle exec rackup -p 4567 config.ru
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production RUBYWARDEN_ALLOW_SIGNUPS=1 bundle exec rackup -p 4567 config.ru
 
 Once the server is running, the Bitwarden apps (such as the Firefox extension)
 can be configured to use your own Bitwarden server before login.
@@ -70,6 +72,30 @@ For a local Rack instance, you can point it at `http://127.0.0.1:4567/`.
 To run the test suite:
 
 	bundle exec rake test
+
+### Changing URL Paths
+
+By default, Rubywarden is setup to use paths on a single hostname that the
+Bitwarden clients will default to so you do not have to specify separate API,
+Identity, and Icon URLs.
+
+If you are not deploying Rubywarden on its own hostname or want to alter the
+paths for any reason, you can override them with environment variables:
+
+- `RUBYWARDEN_ATTACHMENTS_URL` for the attachments URL - defaults to `/attachments`
+- `RUBYWARDEN_BASE_URL` for the API base - defaults to `/api`
+- `RUBYWARDEN_IDENTITY_BASE_URL` for the identity API base - defaults to
+  `/identity`
+- `RUBYWARDEN_ICONS_URL` for the icon URL - defaults to `/icons`
+
+For example, if you had a website `example.com` and wanted to host Rubywarden
+on a subdirectory called `/notbitwarden`, you would set the environment
+variables in your startup script:
+
+	sudo -u _rubywarden env RUBYWARDEN_ENV=production RUBYWARDEN_BASE_URL=/notbitwarden/api RUBYWARDEN_IDENTITY_BASE_URL=/notbitwarden/identity RUBYWARDEN_ICONS_URL=/notbitwarden/icons RUBYWARDEN_ATTACHMENTS_URL=/notbitwarden/attachments bundle exec rackup -p 4567 config.ru
+
+Then you can configure the Bitwarden clients with a single server URL of
+`https://example.com/notbitwarden`.
 
 ### Updating
 
@@ -202,7 +228,7 @@ so you can run it offline.
 
 ### Rubywarden License
 
-Copyright (c) 2017-2018 joshua stein `<jcs@jcs.org>`
+Copyright (c) 2017-2019 joshua stein `<jcs@jcs.org>`
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above

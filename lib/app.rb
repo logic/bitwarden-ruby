@@ -30,7 +30,7 @@ module Rubywarden
     register Sinatra::Namespace
     register Sinatra::ActiveRecordExtension
 
-    set :root, File.dirname(__FILE__)
+    set :root, File.expand_path("..", File.dirname(__FILE__))
 
     configure do
       enable :logging
@@ -63,11 +63,27 @@ module Rubywarden
 
       # we're always going to reply with json
       content_type :json
+
+      # set CORS headers for safari extension
+      response.headers["Access-Control-Allow-Origin"] = "file://"
+      # just parrot back whatever safari asked for
+      if request.env["HTTP_ACCESS_CONTROL_REQUEST_METHOD"]
+       response.headers["Access-Control-Allow-Methods"] =
+         request.env["HTTP_ACCESS_CONTROL_REQUEST_METHOD"]
+      end
+      if request.env["HTTP_ACCESS_CONTROL_REQUEST_HEADERS"]
+        response.headers["Access-Control-Allow-Headers"] =
+          request.env["HTTP_ACCESS_CONTROL_REQUEST_HEADERS"]
+      end
     end
 
     register Rubywarden::Routing::Api
     register Rubywarden::Routing::Icons
     register Rubywarden::Routing::Identity
     register Rubywarden::Routing::Attachments
+
+    options /.*/ do
+      # empty response just to respond with CORS headers
+    end
   end
 end
